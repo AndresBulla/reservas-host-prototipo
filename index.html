@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Reservas en el celular del host — prototipo navegable</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --ink: #0b2333;
+    --ink-soft: #23485f;
+    --muted: #5d7686;
+    --faint: #90a8b6;
+    --line: #dce6ec;
+    --line-strong: #c3d4de;
+    --paper: #eef4f7;
+    --card: #ffffff;
+    --card-2: #f7fafb;
+    --cyan: #00dffe;
+    --cyan-ink: #07788d;
+    --cyan-wash: #e2f8fd;
+    --seated: #0f8f6c;
+    --seated-wash: #e2f4ee;
+    --late: #a86a12;
+    --late-wash: #fbf1e0;
+    --danger: #cf3f5c;
+    --danger-wash: #fceaee;
+    --shadow: 0 1px 2px rgba(11, 35, 51, .06), 0 8px 24px rgba(11, 35, 51, .07);
+    --shadow-sheet: 0 -8px 40px rgba(11, 35, 51, .18);
+    --r: 14px;
+    --tap: 46px;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e9f3f7;
+      --ink-soft: #bcd4e0;
+      --muted: #8ba9b9;
+      --faint: #6a8899;
+      --line: #1d3a4a;
+      --line-strong: #2a5065;
+      --paper: #06161f;
+      --card: #0e2734;
+      --card-2: #123040;
+      --cyan: #35e4ff;
+      --cyan-ink: #6ceaff;
+      --cyan-wash: #0d3a47;
+      --seated: #4fd6ab;
+      --seated-wash: #0d3830;
+      --late: #e2ab55;
+      --late-wash: #38290f;
+      --danger: #ff8098;
+      --danger-wash: #3d1622;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+      --shadow-sheet: 0 -8px 40px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e9f3f7; --ink-soft: #bcd4e0; --muted: #8ba9b9; --faint: #6a8899;
+    --line: #1d3a4a; --line-strong: #2a5065; --paper: #06161f; --card: #0e2734;
+    --card-2: #123040; --cyan: #35e4ff; --cyan-ink: #6ceaff; --cyan-wash: #0d3a47;
+    --seated: #4fd6ab; --seated-wash: #0d3830; --late: #e2ab55; --late-wash: #38290f;
+    --danger: #ff8098; --danger-wash: #3d1622;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-sheet: 0 -8px 40px rgba(0,0,0,.55);
+  }
+  :root[data-theme="light"] {
+    --ink: #0b2333; --ink-soft: #23485f; --muted: #5d7686; --faint: #90a8b6;
+    --line: #dce6ec; --line-strong: #c3d4de; --paper: #eef4f7; --card: #ffffff;
+    --card-2: #f7fafb; --cyan: #00dffe; --cyan-ink: #07788d; --cyan-wash: #e2f8fd;
+    --seated: #0f8f6c; --seated-wash: #e2f4ee; --late: #a86a12; --late-wash: #fbf1e0;
+    --danger: #cf3f5c; --danger-wash: #fceaee;
+    --shadow: 0 1px 2px rgba(11,35,51,.06), 0 8px 24px rgba(11,35,51,.07);
+    --shadow-sheet: 0 -8px 40px rgba(11,35,51,.18);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--ui);
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--cyan-ink); outline-offset: 2px; border-radius: 6px; }
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 56px;
+    align-items: start;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 28px 80px;
+  }
+  @media (max-width: 900px) {
+    .stage { grid-template-columns: 1fr; gap: 36px; padding: 28px 18px 56px; }
+  }
+  .pitch { max-width: 60ch; }
+  .eyebrow {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--cyan-ink); font-weight: 700; margin: 0 0 12px;
+  }
+  .pitch h1 {
+    font-size: clamp(28px, 4.2vw, 40px); line-height: 1.1; margin: 0 0 16px;
+    letter-spacing: -.02em; text-wrap: balance;
+  }
+  .pitch .lede { font-size: 17px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 28px; }
+  .pitch h2 {
+    font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    margin: 34px 0 14px; font-weight: 700;
+  }
+  .pitch p { line-height: 1.65; color: var(--ink-soft); margin: 0 0 14px; }
+  .pitch strong { color: var(--ink); }
+  .compare { display: grid; gap: 10px; margin: 0 0 8px; padding: 0; list-style: none; }
+  .compare li {
+    display: grid; grid-template-columns: 22px 1fr; gap: 12px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; box-shadow: var(--shadow); line-height: 1.55;
+  }
+  .compare .mk { font-weight: 700; font-size: 13px; padding-top: 2px; }
+  .compare .before .mk { color: var(--danger); }
+  .compare .after .mk { color: var(--seated); }
+  .compare b { display: block; margin-bottom: 3px; }
+  .compare span.txt { color: var(--ink-soft); font-size: 14.5px; }
+  .hint {
+    margin-top: 20px; font-size: 13.5px; color: var(--muted);
+    border-left: 2px solid var(--cyan); padding-left: 14px; line-height: 1.6;
+  }
+  .phone-wrap { position: sticky; top: 32px; justify-self: center; }
+  @media (max-width: 900px) { .phone-wrap { position: static; } }
+  .phone {
+    width: 390px; height: 780px; max-width: 100%;
+    background: var(--card); border-radius: 38px;
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 2px 6px rgba(11,35,51,.10), 0 30px 70px rgba(11,35,51,.18);
+    overflow: hidden; position: relative; display: flex; flex-direction: column;
+  }
+  .phone-caption {
+    text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 14px;
+  }
+  .protobar { display: none; }
+  @media (max-width: 700px) {
+    .protobar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      height: 40px; padding: 0 14px; background: #0b2333; color: #ffffff;
+      font-size: 12.5px; font-weight: 600; position: relative; z-index: 40;
+    }
+    .protobar a { color: #35e4ff; }
+    .protobar a { color: var(--cyan); text-decoration: none; font-weight: 700; white-space: nowrap; }
+    .stage {
+      display: flex; flex-direction: column; gap: 0;
+      padding: 0; max-width: none;
+    }
+    .phone-wrap { order: -1; position: static; width: 100%; margin: 0; }
+    .phone {
+      width: 100%; height: calc(100dvh - 40px); max-width: none;
+      border-radius: 0; border: 0; box-shadow: none;
+    }
+    .phone-caption { display: none; }
+    .pitch {
+      max-width: none; padding: 30px 18px 60px;
+      border-top: 1px solid var(--line); background: var(--paper);
+    }
+    .pitch h1 { font-size: 27px; }
+    .pitch .lede { font-size: 16px; }
+  }
+  .top {
+    flex: 0 0 auto; background: var(--card); border-bottom: 1px solid var(--line);
+    padding: 14px 16px 0; z-index: 5;
+  }
+  .top-row { display: flex; align-items: center; gap: 10px; }
+  .live {
+    display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+    font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 700; color: var(--muted);
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 20px; padding: 5px 10px;
+  }
+  .live i {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--seated); flex: 0 0 auto;
+  }
+  .today-label { flex: 1; min-width: 0; }
+  .today-label .d1 {
+    font-size: 17px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .today-label .d2 { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .capsule {
+    margin: 12px 0 0; width: 100%; text-align: left; cursor: pointer;
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 9px 12px; display: flex; align-items: center; gap: 10px;
+  }
+  .capsule .bar {
+    flex: 1; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden;
+  }
+  .capsule .bar i { display: block; height: 100%; background: var(--cyan); border-radius: 3px; }
+  .capsule .num { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 700; }
+  .capsule .lab { font-size: 12px; color: var(--muted); }
+  .capsule .chev { color: var(--faint); display: grid; place-items: center; }
+  .capsule .chev svg { width: 14px; height: 14px; }
+  .segs { display: flex; gap: 6px; padding: 12px 0 12px; }
+  .seg {
+    flex: 1; border: 1px solid var(--line); background: transparent; border-radius: 10px;
+    padding: 8px 4px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted);
+    display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 40px;
+    white-space: nowrap; letter-spacing: -.01em;
+  }
+  .seg[aria-selected="true"] {
+    background: var(--ink); color: var(--card); border-color: var(--ink);
+  }
+  :root[data-theme="dark"] .seg[aria-selected="true"],
+  .seg[aria-selected="true"] { }
+  @media (prefers-color-scheme: dark) {
+    .seg[aria-selected="true"] { background: var(--cyan-wash); color: var(--cyan-ink); border-color: var(--cyan-ink); }
+  }
+  :root[data-theme="dark"] .seg[aria-selected="true"] { background: var(--cyan-wash); color: var(--cyan-ink); border-color: var(--cyan-ink); }
+  :root[data-theme="light"] .seg[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .seg .n {
+    font-variant-numeric: tabular-nums; font-size: 11.5px; font-weight: 700;
+    background: rgba(125,150,165,.22); border-radius: 20px; padding: 1px 6px;
+  }
+  .seg[aria-selected="true"] .n { background: rgba(255,255,255,.22); }
+  :root[data-theme="dark"] .seg[aria-selected="true"] .n { background: rgba(0,0,0,.25); }
+  .pending {
+    margin: 0 16px 10px; display: flex; align-items: center; gap: 10px; width: calc(100% - 32px);
+    background: var(--late-wash); border: 1px solid transparent; color: var(--late);
+    border-radius: 12px; padding: 10px 12px; font-size: 13.5px; cursor: pointer; text-align: left;
+  }
+  .pending[hidden] { display: none; }
+  .pending b { font-weight: 700; }
+  .pending .go { margin-left: auto; font-weight: 700; }
+  .board { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 14px; }
+  .group {
+    position: sticky; top: 0; z-index: 3; background: var(--paper);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 7px 16px; display: flex; align-items: baseline; gap: 8px;
+  }
+  .group .g1 { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  .group .g2 { font-size: 11.5px; color: var(--muted); }
+  .group .g3 {
+    margin-left: auto; font-size: 11.5px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .row {
+    width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center;
+    gap: 8px; padding: 11px 14px 11px 0; background: var(--card); border: 0;
+    border-bottom: 1px solid var(--line); cursor: pointer; text-align: left; position: relative;
+  }
+  .row:hover { background: var(--card-2); }
+  .row.is-seated { background: var(--seated-wash); }
+  .row.flash { animation: flash .7s ease; }
+  @keyframes flash { from { background: var(--cyan-wash); } to { } }
+  @media (prefers-reduced-motion: reduce) { .row.flash { animation: none; } }
+  .rail { position: relative; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .rail::before {
+    content: ""; position: absolute; left: 50%; top: -12px; bottom: -12px; width: 1px;
+    background: var(--line); transform: translateX(-.5px);
+  }
+  .row:first-of-type .rail::before { top: 50%; }
+  .time {
+    position: relative; z-index: 1; background: var(--card);
+    font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15.5px;
+    letter-spacing: -.02em; padding: 3px 0; color: var(--ink);
+  }
+  .row.is-seated .time { background: var(--seated-wash); }
+  .row.is-next .time {
+    color: var(--cyan-ink); background: var(--cyan-wash);
+    border-radius: 8px; padding: 3px 7px;
+  }
+  .who { min-width: 0; display: block; }
+  .who .nm {
+    display: block; min-width: 0;
+    font-size: 15px; font-weight: 600; line-height: 1.25; letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .who .sub {
+    display: block; min-width: 0;
+    font-size: 12.5px; color: var(--muted); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .who .sub .ok { color: var(--seated); font-weight: 600; }
+  .pax {
+    font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px;
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 20px;
+    padding: 2px 9px; color: var(--ink-soft); white-space: nowrap;
+  }
+  .row-end { display: flex; align-items: center; gap: 8px; }
+  .cta {
+    min-height: var(--tap); min-width: 68px; padding: 0 12px; border-radius: 12px;
+    border: 1px solid var(--cyan-ink); background: var(--cyan-wash); color: var(--cyan-ink);
+    font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .cta:active { transform: translateY(1px); }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700;
+    color: var(--seated); background: transparent; padding: 0 4px;
+  }
+  .tag svg { width: 15px; height: 15px; }
+  .empty { padding: 48px 28px; text-align: center; color: var(--muted); }
+  .empty .big { font-size: 15px; color: var(--ink-soft); font-weight: 600; margin-bottom: 6px; }
+  .empty .sm { font-size: 13.5px; line-height: 1.55; }
+  .bottom {
+    flex: 0 0 auto; border-top: 1px solid var(--line); background: var(--card);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 10px;
+  }
+  .b-ghost {
+    min-height: var(--tap); border-radius: 12px; border: 1px solid var(--line);
+    background: transparent; padding: 0 16px; cursor: pointer; display: flex;
+    align-items: center; gap: 8px; font-weight: 600; font-size: 14.5px; color: var(--ink-soft);
+  }
+  .b-primary {
+    flex: 1; min-height: var(--tap); border-radius: 12px; border: 0; cursor: pointer;
+    background: var(--ink); color: #fff; font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  :root[data-theme="dark"] .b-primary { background: var(--cyan); color: #06202b; }
+  @media (prefers-color-scheme: dark) { .b-primary { background: var(--cyan); color: #06202b; } }
+  :root[data-theme="light"] .b-primary { background: var(--ink); color: #fff; }
+  .b-ghost svg, .b-primary svg { width: 18px; height: 18px; }
+  .scrim {
+    position: absolute; inset: 0; background: rgba(6, 22, 31, .42); opacity: 0;
+    pointer-events: none; transition: opacity .18s ease; z-index: 20;
+  }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 21;
+    background: var(--card); border-radius: 20px 20px 0 0; box-shadow: var(--shadow-sheet);
+    transform: translateY(101%); transition: transform .22s cubic-bezier(.2,.7,.3,1);
+    max-height: 92%; display: flex; flex-direction: column;
+  }
+  .sheet.on { transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet, .scrim { transition: none; }
+  }
+  .grab { width: 38px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: 9px auto 0; flex: 0 0 auto; }
+  .sheet-head { padding: 12px 18px 10px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+  .sheet-head h3 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .sheet-head p { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+  .sheet-body { padding: 14px 18px 18px; overflow-y: auto; }
+  .sheet-foot {
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line); display: flex; gap: 10px; flex: 0 0 auto;
+  }
+  .sheet-foot.stack { flex-direction: column; align-items: stretch; }
+  .sheet-foot.stack .btns { display: flex; gap: 10px; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .fact { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .fact .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .fact .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 3px; }
+  .acts { display: grid; gap: 8px; }
+  .act {
+    min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--card);
+    display: flex; align-items: center; gap: 12px; padding: 0 14px; cursor: pointer;
+    font-size: 15px; font-weight: 600; text-align: left; width: 100%;
+  }
+  .act svg { width: 19px; height: 19px; flex: 0 0 auto; }
+  .act small { margin-left: auto; font-weight: 500; font-size: 12.5px; color: var(--muted); }
+  .act.primary { background: var(--cyan-wash); border-color: var(--cyan-ink); color: var(--cyan-ink); }
+  .act.good { color: var(--seated); }
+  .act.bad { color: var(--danger); }
+  label.f { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin: 0 0 6px; }
+  .fld { margin-bottom: 14px; }
+  .fld input, .fld select, .fld textarea {
+    width: 100%; min-height: var(--tap); border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card-2); color: var(--ink); padding: 10px 12px; font-size: 16px;
+    font-family: inherit;
+  }
+  .fld textarea { min-height: 74px; resize: vertical; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stepper { display: flex; align-items: center; gap: 12px; }
+  .stepper button {
+    width: 52px; height: 52px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--card-2); font-size: 24px; font-weight: 600; cursor: pointer; line-height: 1;
+  }
+  .stepper .val {
+    flex: 1; text-align: center; font-size: 30px; font-weight: 800;
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--card-2); border-radius: 10px;
+    padding: 9px 13px; font-size: 14px; font-weight: 600; cursor: pointer;
+    font-variant-numeric: tabular-nums; min-height: 42px;
+  }
+  .chip[aria-pressed="true"] { background: var(--cyan-wash); border-color: var(--cyan-ink); color: var(--cyan-ink); }
+  .diffbox { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 4px; }
+  .diffbox .t { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: .04em; text-transform: uppercase; }
+  .diffbox ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .diffbox li { font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .diffbox .was { color: var(--muted); text-decoration: line-through; }
+  .diffbox .now { font-weight: 700; }
+  .diffbox .none { font-size: 13.5px; color: var(--muted); }
+  .searchbar { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: center; }
+  .searchbar input {
+    flex: 1; min-height: var(--tap); border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card-2); color: var(--ink); padding: 10px 14px; font-size: 16px;
+  }
+  .link-btn { background: transparent; border: 0; color: var(--cyan-ink); font-weight: 700; cursor: pointer; font-size: 14.5px; padding: 8px; }
+  .toast {
+    position: absolute; left: 14px; right: 14px; bottom: 78px; z-index: 30;
+    background: var(--ink); color: #fff; border-radius: 12px; padding: 12px 14px;
+    font-size: 14px; box-shadow: var(--shadow); display: flex; gap: 10px; align-items: center;
+    transform: translateY(14px); opacity: 0; pointer-events: none; transition: all .18s ease;
+  }
+  :root[data-theme="dark"] .toast { background: #12394a; }
+  @media (prefers-color-scheme: dark) { .toast { background: #12394a; } }
+  :root[data-theme="light"] .toast { background: var(--ink); color: #fff; }
+  .toast.on { transform: translateY(0); opacity: 1; }
+  .toast .undo { margin-left: auto; font-weight: 700; color: var(--cyan); background: none; border: 0; cursor: pointer; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+
+<div class="protobar">
+  <span>Prototipo · no es la app en producción</span>
+  <a href="#porque">Por qué así ↓</a>
+</div>
+
+<div class="stage">
+  <section class="pitch" id="porque">
+    <p class="eyebrow">Prototipo navegable · Reservas en el celular del host</p>
+    <h1>El host trabaja parado, con una mano y en diez segundos.</h1>
+    <p class="lede">
+      La pantalla de hoy es un tablero de análisis mostrado en un teléfono. Esta propuesta
+      invierte la premisa: <strong>la lista de gente es la pantalla</strong>, y todo lo demás
+      se pide cuando hace falta. Tocá el teléfono de al lado — funciona.
+    </p>
+
+    <h2>Qué pasa hoy en el teléfono</h2>
+    <ul class="compare">
+      <li class="before">
+        <span class="mk">✕</span>
+        <span class="txt"><b>16 bloques antes del primer nombre.</b> Título, subtítulo, selector de
+        sucursal, cuatro botones, navegador de semana, Día/Semana/Mes, la grilla de aforo de siete
+        días, el panel del día con su propio “Cerrar”, tres barras de jornada, buscador, cinco
+        pestañas cortadas y un párrafo que explica qué ocupa cupo.</span>
+      </li>
+      <li class="before">
+        <span class="mk">✕</span>
+        <span class="txt"><b>La acción principal queda fuera de pantalla.</b> La tabla necesita
+        scroll horizontal, así que el botón para marcar que alguien llegó no se ve. Es lo único
+        que el host hace veinte veces por noche.</span>
+      </li>
+      <li class="before">
+        <span class="mk">✕</span>
+        <span class="txt"><b>La columna “Sucursal” repite el mismo valor</b> en cuatro líneas por
+        fila, cuando ya filtraste por esa sucursal. Los nombres parten en tres líneas para dejarle
+        lugar.</span>
+      </li>
+    </ul>
+
+    <h2>Qué cambia acá</h2>
+    <ul class="compare">
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Sólo hoy, sin navegación de fechas.</b> El host recibe gente ahora; no
+        necesita el viernes ni el domingo. Sacar las flechas elimina la peor confusión posible —
+        quedarse mirando otro día y creer que no hay nadie. En el lugar del navegador va el
+        <b>reloj</b>, que es el único eje temporal que sí usa.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Abre en la lista.</b> Fecha y cupo caben en una línea; el detalle del
+        aforo por jornada está a un toque, no ocupando media pantalla.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Una acción por fila, del tamaño de un pulgar.</b> “Llegó” a la derecha,
+        siempre visible. El resto —editar, cancelar, escribirle— vive tocando la fila.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Tres estados, no cinco pestañas.</b> Por llegar, Sentados, Todas. Las
+        solicitudes avisan arriba sólo cuando hay.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Riel de horas.</b> El host piensa en “los de las siete”: la hora manda
+        en la lectura y las reservas se agrupan por jornada, con un punto en la siguiente que
+        llega.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Nueva reserva en cuatro toques.</b> Personas, nombre, celular, hora.
+        Sin cédula, sin mesa — como la carga hoy el agente de WhatsApp.</span>
+      </li>
+    </ul>
+
+    <p class="hint">
+      Los datos son los del sábado 8 de agosto que aparece en tus capturas: mismos nombres, mismas
+      horas, mismo cupo. Probá marcar una llegada, buscar “pineda”, editar una reserva o cargar una
+      nueva.
+    </p>
+  </section>
+
+  <div class="phone-wrap">
+    <div class="phone" id="phone">
+      <!-- Cabecera -->
+      <header class="top">
+        <div class="top-row">
+          <div class="today-label">
+            <div class="d1">Hoy · sábado 8 de agosto</div>
+            <div class="d2">Restaurante Redman</div>
+          </div>
+          <span class="live" title="Hora actual"><i></i><span id="clock">19:42</span></span>
+        </div>
+
+        <button class="capsule" id="capacityBtn">
+          <span class="num" id="capNum">157</span>
+          <span class="lab">de 420</span>
+          <span class="bar"><i id="capBar" style="width:37%"></i></span>
+          <span class="chev">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </span>
+        </button>
+
+        <div class="segs" role="tablist" aria-label="Estado de las reservas">
+          <button class="seg" role="tab" data-view="por-llegar" aria-selected="true">Por llegar <span class="n" id="nPor">13</span></button>
+          <button class="seg" role="tab" data-view="sentados" aria-selected="false">Sentados <span class="n" id="nSen">1</span></button>
+          <button class="seg" role="tab" data-view="todas" aria-selected="false">Todas</button>
+        </div>
+      </header>
+
+      <button class="pending" id="pendingBtn">
+        <span><b>1 solicitud</b> esperando respuesta</span>
+        <span class="go">Ver ›</span>
+      </button>
+
+      <!-- Tablero -->
+      <main class="board" id="board"></main>
+
+      <!-- Barra inferior -->
+      <nav class="bottom">
+        <button class="b-ghost" id="searchBtn" aria-label="Buscar reserva">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+          Buscar
+        </button>
+        <button class="b-primary" id="newBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nueva reserva
+        </button>
+      </nav>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span></div>
+
+      <!-- Hojas -->
+      <div class="scrim" id="scrim"></div>
+      <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <div class="grab"></div>
+        <div class="sheet-head">
+          <h3 id="sheetTitle"></h3>
+          <p id="sheetSub"></p>
+        </div>
+        <div class="sheet-body" id="sheetBody"></div>
+        <div class="sheet-foot" id="sheetFoot" hidden></div>
+      </section>
+    </div>
+    <p class="phone-caption">390 × 780 — el tamaño real de un iPhone en la mano del host</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const BANDS = [
+    { key: "almuerzo", label: "Almuerzo", range: "12:00–18:59", cap: 140 },
+    { key: "cena",     label: "Cena",     range: "19:00–03:59", cap: 140 }
+  ];
+  let data = [
+    { id: 1,  t: "13:00", nm: "María Paulina Pérez",     pax: 9,  tel: "573000000001",  st: "sentado", arr: "13:12", conf: true },
+    { id: 2,  t: "16:00", nm: "Eliana Monroy García",    pax: 15, tel: "573000000002",  st: "por-llegar", conf: false },
+    { id: 3,  t: "16:30", nm: "María Teresa Solórzano",  pax: 5,  tel: "573000000003",  st: "por-llegar", conf: true },
+    { id: 4,  t: "17:00", nm: "Piedad Restrepo",         pax: 4,  tel: "573000000004",  st: "por-llegar", conf: false },
+    { id: 5,  t: "18:00", nm: "Juliana Pineda",          pax: 3,  tel: "573000000005",  st: "por-llegar", conf: false },
+    { id: 6,  t: "18:00", nm: "",                        pax: 9,  tel: "573000000006",  st: "por-llegar", conf: false },
+    { id: 7,  t: "18:00", nm: "Eliza Contreras",         pax: 4,  tel: "573000000007",  st: "por-llegar", conf: false },
+    { id: 8,  t: "18:00", nm: "Catalina Pineda",         pax: 15, tel: "573000000008",  st: "por-llegar", conf: true },
+    { id: 9,  t: "18:30", nm: "Sandra Gómez Bustamante", pax: 9,  tel: "573000000009",  st: "por-llegar", conf: false },
+    { id: 10, t: "18:30", nm: "Adelaida Gutiérrez",      pax: 15, tel: "573000000010",  st: "por-llegar", conf: false },
+    { id: 11, t: "19:00", nm: "Doña Mafe",               pax: 45, tel: "573000000011",  st: "por-llegar", conf: true, note: "Cumpleaños · piden el salón del fondo" },
+    { id: 12, t: "19:00", nm: "Catalina Ortega",         pax: 3,  tel: "573000000012",  st: "por-llegar", conf: false },
+    { id: 13, t: "20:00", nm: "Valentina Gil Montoya",   pax: 15, tel: "573000000013",  st: "por-llegar", conf: false },
+    { id: 14, t: "21:00", nm: "Karen Ríos",              pax: 6,  tel: "573000000014",  st: "por-llegar", conf: false },
+    { id: 15, t: "22:00", nm: "Andrés Felipe Mejía",     pax: 4,  tel: "573000000016",  st: "solicitud",  conf: false }
+  ];
+  let nextId = 100;
+  const $ = (s) => document.querySelector(s);
+  const board = $("#board"), scrim = $("#scrim"), sheet = $("#sheet");
+  const sheetTitle = $("#sheetTitle"), sheetSub = $("#sheetSub");
+  const sheetBody = $("#sheetBody"), sheetFoot = $("#sheetFoot");
+  let view = "por-llegar";
+  let query = "";
+  let lastAction = null;
+  const mins = (t) => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
+  const bandOf = (t) => (mins(t) >= 19 * 60 || mins(t) < 4 * 60) ? "cena" : "almuerzo";
+  const label = (r) => r.nm && r.nm.trim() ? r.nm : tel(r.tel);
+  const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const occupies = (r) => r.st === "por-llegar" || r.st === "sentado";
+  function matches(r) {
+    if (!query.trim()) return true;
+    const q = fold(query.trim());
+    if (fold(label(r)).includes(q)) return true;
+    const digits = query.replace(/\D/g, "");
+    return digits.length > 0 && r.tel.endsWith(digits);
+  }
+  function visible() {
+    return data
+      .filter((r) => {
+        if (r.st === "solicitud" || r.st === "cancelada") return false;
+        if (view === "por-llegar") return r.st === "por-llegar";
+        if (view === "sentados") return r.st === "sentado";
+        return true;
+      })
+      .filter(matches)
+      .sort((a, b) => mins(a.t) - mins(b.t));
+  }
+  function render() {
+    const gente = data.filter(occupies).reduce((n, r) => n + r.pax, 0);
+    $("#capNum").textContent = gente;
+    $("#capBar").style.width = Math.min(100, Math.round(gente / 420 * 100)) + "%";
+    $("#nPor").textContent = data.filter((r) => r.st === "por-llegar").length;
+    $("#nSen").textContent = data.filter((r) => r.st === "sentado").length;
+    const solicitudes = data.filter((r) => r.st === "solicitud").length;
+    const pb = $("#pendingBtn");
+    pb.hidden = solicitudes === 0;
+    if (solicitudes) {
+      pb.querySelector("span").innerHTML =
+        "<b>" + solicitudes + (solicitudes === 1 ? " solicitud</b> esperando respuesta" : " solicitudes</b> esperando respuesta");
+    }
+    const rows = visible();
+    board.innerHTML = "";
+    if (!rows.length) {
+      board.innerHTML = vacio();
+      return;
+    }
+    const siguiente = rows.find((r) => r.st === "por-llegar");
+    let bandaActual = null;
+    rows.forEach((r) => {
+      const b = bandOf(r.t);
+      if (b !== bandaActual) {
+        bandaActual = b;
+        const def = BANDS.find((x) => x.key === b);
+        const enBanda = data.filter((x) => occupies(x) && bandOf(x.t) === b).reduce((n, x) => n + x.pax, 0);
+        const g = document.createElement("div");
+        g.className = "group";
+        g.innerHTML =
+          '<span class="g1">' + def.label + '</span>' +
+          '<span class="g2">' + def.range + '</span>' +
+          '<span class="g3">' + enBanda + " / " + def.cap + "</span>";
+        board.appendChild(g);
+      }
+      board.appendChild(fila(r, r === siguiente));
+    });
+  }
+  function vacio() {
+    if (query.trim()) {
+      return '<div class="empty"><div class="big">Nadie coincide con “' + esc(query) + '”</div>' +
+        '<div class="sm">Probá con el apellido o los últimos dígitos del celular.</div></div>';
+    }
+    if (view === "sentados") {
+      return '<div class="empty"><div class="big">No hay nadie sentado</div>' +
+        '<div class="sm">Al marcar que alguien llegó, aparece acá hasta que se va.</div></div>';
+    }
+    return '<div class="empty"><div class="big">Nadie más por llegar</div>' +
+      '<div class="sm">Todas las reservas del día ya entraron.</div></div>';
+  }
+  function fila(r, esSiguiente) {
+    const el = document.createElement("button");
+    el.className = "row" + (r.st === "sentado" ? " is-seated" : "") + (esSiguiente ? " is-next" : "");
+    el.type = "button";
+    el.dataset.id = r.id;
+    el.setAttribute("aria-label", "Reserva de " + label(r) + " a las " + r.t + ", " + r.pax + " personas");
+    const sub = r.st === "sentado"
+      ? '<span class="ok">Llegó ' + r.arr + "</span>"
+      : !r.nm || !r.nm.trim()
+        ? "Reservó por WhatsApp, sin nombre"
+        : (r.conf ? '<span class="ok">Confirmó</span> · ' : "") + tel(r.tel);
+    const fin = r.st === "sentado"
+      ? '<span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Sentados</span>'
+      : '<button class="cta" data-checkin="' + r.id + '">Llegó</button>';
+    el.innerHTML =
+      '<span class="rail"><span class="time">' + r.t + "</span></span>" +
+      '<span class="who"><span class="nm">' + esc(label(r)) + "</span>" +
+      '<span class="sub">' + sub + "</span></span>" +
+      '<span class="row-end"><span class="pax">' + r.pax + "</span>" + fin + "</span>";
+    return el;
+  }
+  const tel = (t) => t.startsWith("57") ? t.slice(2, 5) + " " + t.slice(5, 8) + " " + t.slice(8) : t;
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  let toastT;
+  let footFn = null;
+  function onFoot(fn) {
+    if (footFn) sheetFoot.removeEventListener("click", footFn);
+    footFn = fn;
+    sheetFoot.addEventListener("click", footFn);
+  }
+  function abrir(titulo, sub, cuerpo, pie) {
+    clearTimeout(toastT);
+    $("#toast").classList.remove("on");
+    if (footFn) { sheetFoot.removeEventListener("click", footFn); footFn = null; }
+    sheetFoot.classList.remove("stack");
+    sheetTitle.textContent = titulo;
+    sheetSub.textContent = sub || "";
+    sheetSub.hidden = !sub;
+    sheetBody.innerHTML = cuerpo;
+    if (pie) { sheetFoot.innerHTML = pie; sheetFoot.hidden = false; }
+    else { sheetFoot.hidden = true; sheetFoot.innerHTML = ""; }
+    scrim.classList.add("on");
+    sheet.classList.add("on");
+    const f = sheetBody.querySelector("input, select, textarea, button");
+    if (f && !("ontouchstart" in window)) setTimeout(() => f.focus({ preventScroll: true }), 210);
+  }
+  function cerrar() { scrim.classList.remove("on"); sheet.classList.remove("on"); }
+  scrim.addEventListener("click", cerrar);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrar(); });
+  function avisar(msg, deshacer) {
+    const t = $("#toast");
+    $("#toastMsg").textContent = msg;
+    const old = t.querySelector(".undo");
+    if (old) old.remove();
+    if (deshacer) {
+      const b = document.createElement("button");
+      b.className = "undo"; b.textContent = "Deshacer";
+      b.addEventListener("click", () => { deshacer(); t.classList.remove("on"); render(); });
+      t.appendChild(b);
+    }
+    t.classList.add("on");
+    clearTimeout(toastT);
+    toastT = setTimeout(() => t.classList.remove("on"), 4200);
+  }
+  const find = (id) => data.find((r) => r.id === +id);
+  function checkIn(r, desdeHoja) {
+    const antes = { st: r.st, arr: r.arr };
+    r.st = "sentado";
+    r.arr = ahora();
+    if (desdeHoja) cerrar();
+    render();
+    const fila = board.querySelector('[data-id="' + r.id + '"]');
+    if (fila) fila.classList.add("flash");
+    avisar(label(r) + " está sentado", () => { r.st = antes.st; r.arr = antes.arr; });
+  }
+  function ahora() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  board.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-checkin]");
+    if (btn) { e.stopPropagation(); checkIn(find(btn.dataset.checkin), false); return; }
+    const fila = e.target.closest(".row");
+    if (fila) detalle(find(fila.dataset.id));
+  });
+  function detalle(r) {
+    const acciones = [];
+    if (r.st === "por-llegar") {
+      acciones.push(accion("primary", "checkin", ico("check"), "Llegó", "Ocupa la mesa"));
+    }
+    if (r.st === "sentado") {
+      acciones.push(accion("good", "checkout", ico("out"), "Se fue", "Libera " + r.pax + " cupos"));
+    }
+    acciones.push(accion("", "editar", ico("pencil"), "Editar reserva", "Hora, personas, día"));
+    acciones.push(accion("", "wa", ico("chat"), "Escribirle por WhatsApp", tel(r.tel)));
+    acciones.push(accion("bad", "cancelar", ico("x"), "Cancelar reserva", ""));
+    const nota = r.note
+      ? '<div class="diffbox" style="margin-bottom:14px"><div class="t">Nota</div><div style="font-size:14px">' + esc(r.note) + "</div></div>"
+      : "";
+    const edit = r.editedBy
+      ? '<div class="diffbox" style="margin-bottom:14px"><div class="t">Última edición</div><div style="font-size:13.5px">' +
+        esc(r.editedBy) + " · " + esc(r.editedAt) + (r.editNote ? " — " + esc(r.editNote) : "") + "</div></div>"
+      : "";
+    abrir(label(r), r.st === "sentado" ? "Llegó " + r.arr : (r.conf ? "Confirmó que viene" : "Sin confirmar"),
+      '<div class="facts">' +
+        '<div class="fact"><div class="k">Hora</div><div class="v">' + r.t + "</div></div>" +
+        '<div class="fact"><div class="k">Personas</div><div class="v">' + r.pax + "</div></div>" +
+        '<div class="fact"><div class="k">Jornada</div><div class="v" style="font-size:15px">' +
+          (bandOf(r.t) === "cena" ? "Cena" : "Almuerzo") + "</div></div>" +
+      "</div>" + nota + edit +
+      '<div class="acts">' + acciones.join("") + "</div>");
+    sheetBody.addEventListener("click", (e) => {
+      const a = e.target.closest("[data-act]");
+      if (!a) return;
+      const act = a.dataset.act;
+      if (act === "checkin") checkIn(r, true);
+      if (act === "checkout") {
+        const antes = r.st; r.st = "finalizada"; cerrar(); render();
+        avisar("Se liberaron " + r.pax + " cupos", () => { r.st = antes; });
+      }
+      if (act === "editar") editar(r);
+      if (act === "wa") { cerrar(); avisar("Abriendo la conversación de " + label(r)); }
+      if (act === "cancelar") confirmarCancelar(r);
+    }, { once: true });
+  }
+  const accion = (cls, act, icon, txt, small) =>
+    '<button class="act ' + cls + '" data-act="' + act + '" type="button">' + icon +
+    "<span>" + txt + "</span>" + (small ? "<small>" + esc(small) + "</small>" : "") + "</button>";
+  function ico(k) {
+    const s = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">';
+    if (k === "check")  return s + '<path d="M20 6L9 17l-5-5"/></svg>';
+    if (k === "out")    return s + '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>';
+    if (k === "pencil") return s + '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
+    if (k === "chat")   return s + '<path d="M21 11.5a8.4 8.4 0 01-9 8.4 8.9 8.9 0 01-4-.9L3 21l1.9-4.6A8.4 8.4 0 1121 11.5z"/></svg>';
+    if (k === "x")      return s + '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+    return s + "</svg>";
+  }
+  function editar(r) {
+    abrir("Editar reserva", label(r),
+      '<div class="fld"><label class="f" for="e-hora">Hora</label><input id="e-hora" type="time" value="' + r.t + '"></div>' +
+      '<div class="fld"><label class="f">Personas</label>' +
+        '<div class="stepper"><button type="button" id="e-menos" aria-label="Menos personas">−</button>' +
+        '<span class="val" id="e-pax">' + r.pax + "</span>" +
+        '<button type="button" id="e-mas" aria-label="Más personas">+</button></div></div>' +
+      '<div class="fld"><label class="f" for="e-suc">Sucursal</label><select id="e-suc">' +
+        "<option>Restaurante Redman</option><option>Tienda Redman</option></select></div>" +
+      '<div class="fld"><label class="f" for="e-fecha">Pasarla a otro día</label><input id="e-fecha" type="date" value="2026-08-08"></div>' +
+      '<div class="fld" style="margin-bottom:2px"><label class="f" for="e-nota">Nota de la edición (opcional)</label>' +
+        '<textarea id="e-nota" placeholder="Por qué se cambió — «llamó y se corrieron a las 8»"></textarea></div>',
+      '<div class="diffbox" id="e-diff"><div class="t">Se va a guardar</div><div class="none">Todavía no cambiaste nada.</div></div>' +
+      '<div class="btns"><button class="b-ghost" style="flex:1;justify-content:center" type="button" data-x="volver">Volver</button>' +
+      '<button class="b-primary" type="button" data-x="guardar">Guardar</button></div>');
+    sheetFoot.classList.add("stack");
+    const $$ = (s) => sheet.querySelector(s);
+    const orig = { fecha: "2026-08-08", hora: r.t, pax: r.pax, suc: "Restaurante Redman" };
+    let pax = r.pax;
+    function diff() {
+      const cs = [];
+      if ($$("#e-fecha").value !== orig.fecha) cs.push(["Fecha", fechaTxt(orig.fecha), fechaTxt($$("#e-fecha").value)]);
+      if ($$("#e-hora").value !== orig.hora) cs.push(["Hora", orig.hora, $$("#e-hora").value]);
+      if (pax !== orig.pax) cs.push(["Personas", orig.pax, pax]);
+      if ($$("#e-suc").value !== orig.suc) cs.push(["Sucursal", orig.suc, $$("#e-suc").value]);
+      const box = $$("#e-diff");
+      box.innerHTML = '<div class="t">Se va a guardar</div>' + (cs.length
+        ? "<ul>" + cs.map((c) =>
+            "<li><span>" + c[0] + ':</span> <span class="was">' + esc(c[1]) + "</span> → " +
+            '<span class="now">' + esc(c[2]) + "</span></li>").join("") + "</ul>"
+        : '<div class="none">Todavía no cambiaste nada.</div>');
+      return cs;
+    }
+    $$("#e-menos").addEventListener("click", () => { pax = Math.max(1, pax - 1); $$("#e-pax").textContent = pax; diff(); });
+    $$("#e-mas").addEventListener("click", () => { pax = pax + 1; $$("#e-pax").textContent = pax; diff(); });
+    ["#e-fecha", "#e-hora", "#e-suc"].forEach((s) => $$(s).addEventListener("change", diff));
+    onFoot((e) => {
+      const b = e.target.closest("[data-x]");
+      if (!b) return;
+      if (b.dataset.x === "volver") { cerrar(); return; }
+      const cs = diff();
+      const nota = $$("#e-nota").value.trim();
+      if (!cs.length && !nota) { avisar("No cambiaste nada de la reserva"); return; }
+      r.t = $$("#e-hora").value;
+      r.pax = pax;
+      r.editedBy = "Sandra Gómez";
+      r.editedAt = "hoy " + ahora();
+      if (nota) r.editNote = nota;
+      cerrar(); render();
+      avisar("Reserva de " + label(r) + " actualizada");
+    });
+  }
+  const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fechaTxt(iso) {
+    const p = iso.split("-");
+    return (+p[2]) + " " + MESES[(+p[1]) - 1];
+  }
+  function confirmarCancelar(r) {
+    abrir("Cancelar la reserva", label(r) + " · " + r.t + " · " + r.pax + " personas",
+      '<p style="margin:0;font-size:15px;line-height:1.6;color:var(--ink-soft)">' +
+      "El cupo del día vuelve a subir en <strong>" + r.pax + " personas</strong>. " +
+      "Al cliente no se le avisa desde acá.</p>",
+      '<button class="b-ghost" style="flex:1;justify-content:center" type="button" data-c="no">Volver</button>' +
+      '<button class="b-primary" style="background:var(--danger);color:#fff" type="button" data-c="si">Cancelar reserva</button>');
+    onFoot((e) => {
+      const b = e.target.closest("[data-c]");
+      if (!b) return;
+      if (b.dataset.c === "si") {
+        const antes = r.st; r.st = "cancelada"; cerrar(); render();
+        avisar("Reserva de " + label(r) + " cancelada", () => { r.st = antes; });
+      } else cerrar();
+    });
+  }
+  $("#newBtn").addEventListener("click", () => {
+    const horas = ["13:00", "18:00", "19:00", "19:30", "20:00", "21:00"];
+    abrir("Nueva reserva", "Sábado 8 de agosto · Restaurante Redman",
+      '<div class="fld"><label class="f">¿Cuántas personas?</label>' +
+        '<div class="stepper"><button type="button" id="n-menos" aria-label="Menos personas">−</button>' +
+        '<span class="val" id="n-pax">2</span>' +
+        '<button type="button" id="n-mas" aria-label="Más personas">+</button></div></div>' +
+      '<div class="fld"><label class="f">¿A qué hora?</label><div class="chips" id="n-horas">' +
+        horas.map((h, i) => '<button type="button" class="chip" aria-pressed="' + (i === 2) + '">' + h + "</button>").join("") +
+        "</div></div>" +
+      '<div class="fld"><label class="f" for="n-nom">Nombre</label><input id="n-nom" placeholder="Como lo dijo el cliente"></div>' +
+      '<div class="fld"><label class="f" for="n-tel">Celular</label><input id="n-tel" type="tel" inputmode="numeric" placeholder="300 000 0000"></div>' +
+      '<p style="margin:2px 0 0;font-size:13px;color:var(--muted);line-height:1.55">' +
+      "Sin cédula y sin mesa, igual que las que carga el agente por WhatsApp. La mesa se asigna cuando llegan.</p>",
+      '<button class="b-ghost" style="flex:1;justify-content:center" type="button" data-n="no">Volver</button>' +
+      '<button class="b-primary" type="button" data-n="si">Guardar reserva</button>');
+    const $$ = (s) => sheet.querySelector(s);
+    let pax = 2, hora = "19:00";
+    $$("#n-menos").addEventListener("click", () => { pax = Math.max(1, pax - 1); $$("#n-pax").textContent = pax; });
+    $$("#n-mas").addEventListener("click", () => { pax++; $$("#n-pax").textContent = pax; });
+    $$("#n-horas").addEventListener("click", (e) => {
+      const c = e.target.closest(".chip"); if (!c) return;
+      $$("#n-horas").querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", "false"));
+      c.setAttribute("aria-pressed", "true"); hora = c.textContent;
+    });
+    onFoot((e) => {
+      const b = e.target.closest("[data-n]"); if (!b) return;
+      if (b.dataset.n === "no") { cerrar(); return; }
+      const nom = $$("#n-nom").value.trim();
+      const tl = $$("#n-tel").value.replace(/\D/g, "");
+      if (!nom) { avisar("Falta el nombre del cliente"); $$("#n-nom").focus(); return; }
+      if (tl.length < 10) { avisar("El celular necesita 10 dígitos"); $$("#n-tel").focus(); return; }
+      const r = { id: nextId++, t: hora, nm: nom, pax: pax, tel: "57" + tl.slice(-10), st: "por-llegar", conf: false };
+      data.push(r);
+      view = "por-llegar"; query = "";
+      document.querySelectorAll(".seg").forEach((s) => s.setAttribute("aria-selected", String(s.dataset.view === "por-llegar")));
+      cerrar(); render();
+      const fila = board.querySelector('[data-id="' + r.id + '"]');
+      if (fila) { fila.classList.add("flash"); fila.scrollIntoView({ block: "center", behavior: "smooth" }); }
+      avisar(nom + " quedó para las " + hora, () => { data = data.filter((x) => x.id !== r.id); });
+    });
+  });
+  $("#searchBtn").addEventListener("click", () => {
+    abrir("Buscar", "Atraviesa todos los estados del día",
+      '<div class="fld"><label class="f" for="s-q">Nombre o celular</label>' +
+      '<input id="s-q" placeholder="Escribí lo que te dijo el cliente" value="' + esc(query) + '"></div>' +
+      '<div id="s-res"></div>');
+    const inp = sheet.querySelector("#s-q"), res = sheet.querySelector("#s-res");
+    function pintar() {
+      const q = inp.value.trim();
+      if (!q) { res.innerHTML = '<p style="font-size:13.5px;color:var(--muted);margin:0">Escribí el apellido o los últimos dígitos del celular.</p>'; return; }
+      const hits = data.filter((r) => r.st !== "cancelada" && (fold(label(r)).includes(fold(q)) || (q.replace(/\D/g, "") && r.tel.endsWith(q.replace(/\D/g, "")))));
+      res.innerHTML = hits.length
+        ? '<div class="acts">' + hits.map((r) =>
+            '<button class="act" type="button" data-go="' + r.id + '"><span>' + esc(label(r)) +
+            '</span><small>' + r.t + " · " + r.pax + " pers.</small></button>").join("") + "</div>"
+        : '<p style="font-size:13.5px;color:var(--muted);margin:0">Nadie coincide con “' + esc(q) + '”.</p>';
+    }
+    pintar();
+    inp.addEventListener("input", pintar);
+    res.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-go]"); if (!b) return;
+      const r = find(b.dataset.go);
+      view = "todas"; query = "";
+      document.querySelectorAll(".seg").forEach((s) => s.setAttribute("aria-selected", String(s.dataset.view === "todas")));
+      cerrar(); render();
+      setTimeout(() => detalle(r), 240);
+    });
+  });
+  $("#capacityBtn").addEventListener("click", () => {
+    const filas = BANDS.map((b) => {
+      const n = data.filter((r) => occupies(r) && bandOf(r.t) === b.key).reduce((s, r) => s + r.pax, 0);
+      const pct = Math.min(100, Math.round(n / b.cap * 100));
+      return '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:baseline">' +
+        '<strong style="font-size:15px">' + b.label + '</strong>' +
+        '<span style="font-variant-numeric:tabular-nums;font-size:14px;color:var(--muted)">' + n + " / " + b.cap + "</span></div>" +
+        '<div style="font-size:12.5px;color:var(--muted);margin:2px 0 6px">' + b.range + "</div>" +
+        '<div style="height:6px;border-radius:3px;background:var(--line);overflow:hidden">' +
+        '<i style="display:block;height:100%;width:' + pct + '%;background:var(--cyan)"></i></div></div>';
+    }).join("");
+    abrir("Cupo del día", "Sábado 8 de agosto",
+      filas + '<p style="margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.55">' +
+      "Ocupan cupo los que vienen en camino y los que ya están sentados. Al marcar que alguien se fue, el cupo vuelve a subir.</p>");
+  });
+  $("#pendingBtn").addEventListener("click", () => {
+    abrir("Solicitud de reserva", "Llegó por WhatsApp hace 12 minutos",
+      '<div class="facts">' +
+        '<div class="fact"><div class="k">Hora</div><div class="v">22:00</div></div>' +
+        '<div class="fact"><div class="k">Personas</div><div class="v">4</div></div>' +
+        '<div class="fact"><div class="k">Jornada</div><div class="v" style="font-size:15px">Cena</div></div>' +
+      "</div>" +
+      '<p style="margin:0 0 4px;font-size:15px"><strong>Andrés Felipe Mejía</strong></p>' +
+      '<p style="margin:0;font-size:13.5px;color:var(--muted)">300 000 0020</p>',
+      '<button class="b-primary" style="background:var(--danger);color:#fff;flex:0 0 auto" type="button" data-s="no">Rechazar</button>' +
+      '<button class="b-primary" type="button" data-s="si">Aprobar</button>');
+    onFoot((e) => {
+      const b = e.target.closest("[data-s]"); if (!b) return;
+      if (b.dataset.s === "si") {
+        data.push({ id: nextId++, t: "22:00", nm: "Andrés Felipe Mejía", pax: 4, tel: "573000000016", st: "por-llegar", conf: false });
+        avisar("Andrés Felipe Mejía quedó confirmado para las 22:00");
+      } else avisar("Solicitud rechazada");
+      data = data.filter((r) => r.st !== "solicitud");
+      cerrar(); render();
+    });
+  });
+  document.querySelectorAll(".seg").forEach((s) => {
+    s.addEventListener("click", () => {
+      document.querySelectorAll(".seg").forEach((x) => x.setAttribute("aria-selected", "false"));
+      s.setAttribute("aria-selected", "true");
+      view = s.dataset.view;
+      query = "";
+      render();
+      board.scrollTop = 0;
+    });
+  });
+  function reloj() {
+    const d = new Date();
+    $("#clock").textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  reloj();
+  setInterval(reloj, 30000);
+  render();
+})();
+</script>
+
+</body>
+</html>

@@ -167,10 +167,11 @@
   }
   .today-label { flex: 1; min-width: 0; }
   .today-label .d1 {
+    display: block;
     font-size: 17px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .today-label .d2 { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .today-label .d2 { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
   .capsule {
     margin: 12px 0 0; width: 100%; text-align: left; cursor: pointer;
     background: var(--card-2); border: 1px solid var(--line); border-radius: 12px;
@@ -213,6 +214,7 @@
     border-radius: 12px; padding: 10px 12px; font-size: 13.5px; cursor: pointer; text-align: left;
   }
   .pending[hidden] { display: none; }
+  .otherday[hidden] { display: none; }
   .pending b { font-weight: 700; }
   .pending .go { margin-left: auto; font-weight: 700; }
   .board { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 14px; }
@@ -382,6 +384,37 @@
     background: var(--card-2); color: var(--ink); padding: 10px 14px; font-size: 16px;
   }
   .link-btn { background: transparent; border: 0; color: var(--cyan-ink); font-weight: 700; cursor: pointer; font-size: 14.5px; padding: 8px; }
+  .top { transition: padding .18s ease; }
+  .top .collapsable {
+    max-height: 90px; opacity: 1; overflow: hidden;
+    transition: max-height .2s ease, opacity .15s ease, margin .2s ease;
+  }
+  .top.compact .collapsable { max-height: 0; opacity: 0; margin-top: 0; }
+  .top.compact .today-label .d2 { display: none; }
+  .top.compact .today-label .d1 { font-size: 15px; }
+  @media (prefers-reduced-motion: reduce) {
+    .top, .top .collapsable { transition: none; }
+  }
+  .datebtn {
+    background: none; border: 0; padding: 0; cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 5px; min-width: 0; color: inherit;
+  }
+  .datebtn svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--faint); }
+  .otherday {
+    display: flex; align-items: center; gap: 10px; width: calc(100% - 32px);
+    margin: 0 16px 10px; background: var(--cyan-wash); color: var(--cyan-ink);
+    border: 1px solid var(--cyan-ink); border-radius: 12px; padding: 9px 12px;
+    font-size: 13px; font-weight: 600; cursor: pointer; text-align: left;
+  }
+  .otherday .go { margin-left: auto; font-weight: 700; white-space: nowrap; }
+  .seg { font-size: 12px; padding: 8px 3px; gap: 4px; }
+  .segs { gap: 5px; }
+  .row.is-late .time { color: var(--danger); background: var(--danger-wash); border-radius: 8px; padding: 3px 7px; }
+  .row.is-late { background: linear-gradient(90deg, var(--danger-wash) 0 3px, var(--card) 3px); }
+  .row.is-late .who .sub .late { color: var(--danger); font-weight: 700; }
+  .row.is-fallen { opacity: .72; }
+  .row.is-fallen .time { color: var(--muted); }
+  .tag.fallen { color: var(--danger); }
   .toast {
     position: absolute; left: 14px; right: 14px; bottom: 78px; z-index: 30;
     background: var(--ink); color: #fff; border-radius: 12px; padding: 12px 14px;
@@ -435,15 +468,28 @@
     <ul class="compare">
       <li class="after">
         <span class="mk">✓</span>
-        <span class="txt"><b>Sólo hoy, sin navegación de fechas.</b> El host recibe gente ahora; no
-        necesita el viernes ni el domingo. Sacar las flechas elimina la peor confusión posible —
-        quedarse mirando otro día y creer que no hay nadie. En el lugar del navegador va el
-        <b>reloj</b>, que es el único eje temporal que sí usa.</span>
+        <span class="txt"><b>Abre siempre en hoy, pero se puede cambiar de día.</b> El host trabaja
+        con lo de ahora, así que no hay flechas de semana que lo dejen mirando el domingo sin darse
+        cuenta. La fecha es tocable para el caso real: alguien parado en la puerta con reserva del
+        viernes que hay que mover. Si el día no es hoy, una franja lo dice y ofrece volver.</span>
       </li>
       <li class="after">
         <span class="mk">✓</span>
-        <span class="txt"><b>Abre en la lista.</b> Fecha y cupo caben en una línea; el detalle del
-        aforo por jornada está a un toque, no ocupando media pantalla.</span>
+        <span class="txt"><b>Rojo = pasada de hora.</b> Las que ya deberían haber llegado se pintan
+        con los minutos de atraso: “Doña Mafe · 20 min tarde · 45 personas”. Es la respuesta a
+        “¿tenés mesa?” cuando no la hay — el host sabe cuál se puede caer y a qué hora.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Caída es un estado, no una cancelación.</b> El que no vino se marca en
+        un toque, libera el cupo y queda contado aparte. Cancelar es una decisión; caerse es algo
+        que pasó, y el negocio necesita medir las dos por separado.</span>
+      </li>
+      <li class="after">
+        <span class="mk">✓</span>
+        <span class="txt"><b>Abre en la lista, y al deslizar se encoge.</b> Fecha y cupo caben en
+        una línea y desaparecen apenas la lista se mueve: son contexto, no operación. La lista gana
+        74&nbsp;px, que es una fila y media más de gente.</span>
       </li>
       <li class="after">
         <span class="mk">✓</span>
@@ -478,16 +524,19 @@
   <div class="phone-wrap">
     <div class="phone" id="phone">
       <!-- Cabecera -->
-      <header class="top">
+      <header class="top" id="top">
         <div class="top-row">
-          <div class="today-label">
-            <div class="d1">Hoy · sábado 8 de agosto</div>
-            <div class="d2">Restaurante Redman</div>
-          </div>
-          <span class="live" title="Hora actual"><i></i><span id="clock">19:42</span></span>
+          <button class="datebtn today-label" id="dateBtn" aria-label="Cambiar de día">
+            <span style="min-width:0">
+              <span class="d1" id="dayTitle">Hoy · sábado 8 de agosto</span>
+              <span class="d2" id="daySub">Restaurante Redman</span>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <span class="live" title="Hora del prototipo"><i></i><span id="clock">19:20</span></span>
         </div>
 
-        <button class="capsule" id="capacityBtn">
+        <button class="capsule collapsable" id="capacityBtn">
           <span class="num" id="capNum">157</span>
           <span class="lab">de 420</span>
           <span class="bar"><i id="capBar" style="width:37%"></i></span>
@@ -499,9 +548,15 @@
         <div class="segs" role="tablist" aria-label="Estado de las reservas">
           <button class="seg" role="tab" data-view="por-llegar" aria-selected="true">Por llegar <span class="n" id="nPor">13</span></button>
           <button class="seg" role="tab" data-view="sentados" aria-selected="false">Sentados <span class="n" id="nSen">1</span></button>
+          <button class="seg" role="tab" data-view="caidas" aria-selected="false">Caídas <span class="n" id="nCai">2</span></button>
           <button class="seg" role="tab" data-view="todas" aria-selected="false">Todas</button>
         </div>
       </header>
+
+      <button class="otherday" id="otherDayBtn" hidden>
+        <span id="otherDayTxt"></span>
+        <span class="go">Volver a hoy ›</span>
+      </button>
 
       <button class="pending" id="pendingBtn">
         <span><b>1 solicitud</b> esperando respuesta</span>
@@ -548,23 +603,31 @@
     { key: "almuerzo", label: "Almuerzo", range: "12:00–18:59", cap: 140 },
     { key: "cena",     label: "Cena",     range: "19:00–03:59", cap: 140 }
   ];
+  const HOY = "2026-08-08";
+  const AHORA = "19:20";
+  const MIN_AHORA = 19 * 60 + 20;
   let data = [
-    { id: 1,  t: "13:00", nm: "María Paulina Pérez",     pax: 9,  tel: "573000000001",  st: "sentado", arr: "13:12", conf: true },
-    { id: 2,  t: "16:00", nm: "Eliana Monroy García",    pax: 15, tel: "573000000002",  st: "por-llegar", conf: false },
-    { id: 3,  t: "16:30", nm: "María Teresa Solórzano",  pax: 5,  tel: "573000000003",  st: "por-llegar", conf: true },
-    { id: 4,  t: "17:00", nm: "Piedad Restrepo",         pax: 4,  tel: "573000000004",  st: "por-llegar", conf: false },
-    { id: 5,  t: "18:00", nm: "Juliana Pineda",          pax: 3,  tel: "573000000005",  st: "por-llegar", conf: false },
-    { id: 6,  t: "18:00", nm: "",                        pax: 9,  tel: "573000000006",  st: "por-llegar", conf: false },
-    { id: 7,  t: "18:00", nm: "Eliza Contreras",         pax: 4,  tel: "573000000007",  st: "por-llegar", conf: false },
-    { id: 8,  t: "18:00", nm: "Catalina Pineda",         pax: 15, tel: "573000000008",  st: "por-llegar", conf: true },
-    { id: 9,  t: "18:30", nm: "Sandra Gómez Bustamante", pax: 9,  tel: "573000000009",  st: "por-llegar", conf: false },
-    { id: 10, t: "18:30", nm: "Adelaida Gutiérrez",      pax: 15, tel: "573000000010",  st: "por-llegar", conf: false },
-    { id: 11, t: "19:00", nm: "Doña Mafe",               pax: 45, tel: "573000000011",  st: "por-llegar", conf: true, note: "Cumpleaños · piden el salón del fondo" },
-    { id: 12, t: "19:00", nm: "Catalina Ortega",         pax: 3,  tel: "573000000012",  st: "por-llegar", conf: false },
-    { id: 13, t: "20:00", nm: "Valentina Gil Montoya",   pax: 15, tel: "573000000013",  st: "por-llegar", conf: false },
-    { id: 14, t: "21:00", nm: "Karen Ríos",              pax: 6,  tel: "573000000014",  st: "por-llegar", conf: false },
-    { id: 15, t: "22:00", nm: "Andrés Felipe Mejía",     pax: 4,  tel: "573000000016",  st: "solicitud",  conf: false }
+    { id: 1,  d: HOY, t: "13:00", nm: "María Paulina Pérez",     pax: 9,  tel: "573000000001", st: "sentado",    arr: "13:12", conf: true },
+    { id: 2,  d: HOY, t: "16:00", nm: "Eliana Monroy García",    pax: 15, tel: "573000000002", st: "sentado",    arr: "16:04", conf: false },
+    { id: 3,  d: HOY, t: "16:30", nm: "María Teresa Solórzano",  pax: 5,  tel: "573000000003", st: "caida",      conf: true },
+    { id: 4,  d: HOY, t: "17:00", nm: "Piedad Restrepo",         pax: 4,  tel: "573000000004", st: "sentado",    arr: "17:06", conf: false },
+    { id: 5,  d: HOY, t: "18:00", nm: "Juliana Pineda",          pax: 3,  tel: "573000000005", st: "sentado",    arr: "18:02", conf: false },
+    { id: 6,  d: HOY, t: "18:00", nm: "",                        pax: 9,  tel: "573000000006", st: "caida",      conf: false },
+    { id: 7,  d: HOY, t: "18:00", nm: "Eliza Contreras",         pax: 4,  tel: "573000000007", st: "sentado",    arr: "18:11", conf: false },
+    { id: 8,  d: HOY, t: "18:30", nm: "Catalina Pineda",         pax: 15, tel: "573000000008", st: "sentado",    arr: "18:35", conf: true },
+    { id: 9,  d: HOY, t: "18:45", nm: "Sandra Gómez Bustamante", pax: 9,  tel: "573000000009", st: "por-llegar", conf: false },
+    { id: 10, d: HOY, t: "19:00", nm: "Adelaida Gutiérrez",      pax: 15, tel: "573000000010", st: "por-llegar", conf: false },
+    { id: 11, d: HOY, t: "19:00", nm: "Doña Mafe",               pax: 45, tel: "573000000011", st: "por-llegar", conf: true, note: "Cumpleaños · piden el salón del fondo" },
+    { id: 12, d: HOY, t: "19:30", nm: "Catalina Ortega",         pax: 3,  tel: "573000000012", st: "por-llegar", conf: false },
+    { id: 13, d: HOY, t: "20:00", nm: "Valentina Gil Montoya",   pax: 15, tel: "573000000013", st: "por-llegar", conf: false },
+    { id: 14, d: HOY, t: "21:00", nm: "Karen Ríos",              pax: 6,  tel: "573000000014", st: "por-llegar", conf: false },
+    { id: 15, d: HOY, t: "22:00", nm: "Andrés Felipe Mejía",     pax: 4,  tel: "573000000016", st: "solicitud",  conf: false },
+    { id: 20, d: "2026-08-09", t: "12:30", nm: "Familia Restrepo Vélez", pax: 12, tel: "573000000021", st: "por-llegar", conf: true },
+    { id: 21, d: "2026-08-09", t: "13:00", nm: "Jorge Iván Mesa",        pax: 6,  tel: "573000000022", st: "por-llegar", conf: false },
+    { id: 22, d: "2026-08-09", t: "19:00", nm: "Luisa Lombana",          pax: 10, tel: "573000000023", st: "por-llegar", conf: false },
+    { id: 23, d: "2026-08-10", t: "20:00", nm: "Mauricio Arango",        pax: 8,  tel: "573000000024", st: "por-llegar", conf: false }
   ];
+  let fecha = HOY;
   let nextId = 100;
   const $ = (s) => document.querySelector(s);
   const board = $("#board"), scrim = $("#scrim"), sheet = $("#sheet");
@@ -578,6 +641,18 @@
   const label = (r) => r.nm && r.nm.trim() ? r.nm : tel(r.tel);
   const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const occupies = (r) => r.st === "por-llegar" || r.st === "sentado";
+  function atraso(r) {
+    if (r.st !== "por-llegar" || r.d !== HOY || fecha !== HOY) return 0;
+    return Math.max(0, MIN_AHORA - mins(r.t));
+  }
+  const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  function fechaLarga(iso) {
+    const [a, m, d] = iso.split("-").map(Number);
+    const dt = new Date(a, m - 1, d);
+    return DIAS[dt.getDay()] + " " + d + " de " + MESES_LARGOS[m - 1];
+  }
+  const MESES_LARGOS = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   function matches(r) {
     if (!query.trim()) return true;
     const q = fold(query.trim());
@@ -587,22 +662,30 @@
   }
   function visible() {
     return data
+      .filter((r) => r.d === fecha)
       .filter((r) => {
         if (r.st === "solicitud" || r.st === "cancelada") return false;
         if (view === "por-llegar") return r.st === "por-llegar";
         if (view === "sentados") return r.st === "sentado";
+        if (view === "caidas") return r.st === "caida";
         return true;
       })
       .filter(matches)
       .sort((a, b) => mins(a.t) - mins(b.t));
   }
   function render() {
-    const gente = data.filter(occupies).reduce((n, r) => n + r.pax, 0);
+    const delDia = data.filter((r) => r.d === fecha);
+    const gente = delDia.filter(occupies).reduce((n, r) => n + r.pax, 0);
     $("#capNum").textContent = gente;
     $("#capBar").style.width = Math.min(100, Math.round(gente / 420 * 100)) + "%";
-    $("#nPor").textContent = data.filter((r) => r.st === "por-llegar").length;
-    $("#nSen").textContent = data.filter((r) => r.st === "sentado").length;
-    const solicitudes = data.filter((r) => r.st === "solicitud").length;
+    $("#nPor").textContent = delDia.filter((r) => r.st === "por-llegar").length;
+    $("#nSen").textContent = delDia.filter((r) => r.st === "sentado").length;
+    $("#nCai").textContent = delDia.filter((r) => r.st === "caida").length;
+    const esHoy = fecha === HOY;
+    $("#dayTitle").textContent = (esHoy ? "Hoy \u00b7 " : "") + fechaLarga(fecha);
+    $("#otherDayBtn").hidden = esHoy;
+    if (!esHoy) $("#otherDayTxt").textContent = "Est\u00e1s viendo otro d\u00eda";
+    const solicitudes = delDia.filter((r) => r.st === "solicitud").length;
     const pb = $("#pendingBtn");
     pb.hidden = solicitudes === 0;
     if (solicitudes) {
@@ -647,17 +730,27 @@
       '<div class="sm">Todas las reservas del día ya entraron.</div></div>';
   }
   function fila(r, esSiguiente) {
+    const tarde = atraso(r);
     const el = document.createElement("button");
-    el.className = "row" + (r.st === "sentado" ? " is-seated" : "") + (esSiguiente ? " is-next" : "");
+    el.className = "row" +
+      (r.st === "sentado" ? " is-seated" : "") +
+      (r.st === "caida" ? " is-fallen" : "") +
+      (tarde > 0 ? " is-late" : (esSiguiente ? " is-next" : ""));
     el.type = "button";
     el.dataset.id = r.id;
     el.setAttribute("aria-label", "Reserva de " + label(r) + " a las " + r.t + ", " + r.pax + " personas");
     const sub = r.st === "sentado"
       ? '<span class="ok">Llegó ' + r.arr + "</span>"
-      : !r.nm || !r.nm.trim()
-        ? "Reservó por WhatsApp, sin nombre"
-        : (r.conf ? '<span class="ok">Confirmó</span> · ' : "") + tel(r.tel);
-    const fin = r.st === "sentado"
+      : r.st === "caida"
+        ? "No vino · " + r.pax + " cupos libres"
+        : tarde > 0
+          ? '<span class="late">' + textoAtraso(tarde) + "</span> · " + tel(r.tel)
+          : !r.nm || !r.nm.trim()
+            ? "Reservó por WhatsApp, sin nombre"
+            : (r.conf ? '<span class="ok">Confirmó</span> · ' : "") + tel(r.tel);
+    const fin = r.st === "caida"
+      ? '<span class="tag fallen">Se cay\u00f3</span>'
+      : r.st === "sentado"
       ? '<span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Sentados</span>'
       : '<button class="cta" data-checkin="' + r.id + '">Llegó</button>';
     el.innerHTML =
@@ -713,6 +806,11 @@
     clearTimeout(toastT);
     toastT = setTimeout(() => t.classList.remove("on"), 4200);
   }
+  function textoAtraso(m) {
+    if (m < 60) return m + " min tarde";
+    const h = Math.floor(m / 60), r = m % 60;
+    return h + " h" + (r ? " " + r + " min" : "") + " tarde";
+  }
   const find = (id) => data.find((r) => r.id === +id);
   function checkIn(r, desdeHoja) {
     const antes = { st: r.st, arr: r.arr };
@@ -724,10 +822,7 @@
     if (fila) fila.classList.add("flash");
     avisar(label(r) + " está sentado", () => { r.st = antes.st; r.arr = antes.arr; });
   }
-  function ahora() {
-    const d = new Date();
-    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-  }
+  function ahora() { return AHORA; }
   board.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-checkin]");
     if (btn) { e.stopPropagation(); checkIn(find(btn.dataset.checkin), false); return; }
@@ -742,6 +837,12 @@
     if (r.st === "sentado") {
       acciones.push(accion("good", "checkout", ico("out"), "Se fue", "Libera " + r.pax + " cupos"));
     }
+    if (r.st === "por-llegar") {
+      acciones.push(accion("bad", "caida", ico("x"), "Se cayó · no vino", "Libera " + r.pax + " cupos"));
+    }
+    if (r.st === "caida") {
+      acciones.push(accion("primary", "revivir", ico("check"), "Al final sí vino", "Vuelve a ocupar la mesa"));
+    }
     acciones.push(accion("", "editar", ico("pencil"), "Editar reserva", "Hora, personas, día"));
     acciones.push(accion("", "wa", ico("chat"), "Escribirle por WhatsApp", tel(r.tel)));
     acciones.push(accion("bad", "cancelar", ico("x"), "Cancelar reserva", ""));
@@ -752,7 +853,12 @@
       ? '<div class="diffbox" style="margin-bottom:14px"><div class="t">Última edición</div><div style="font-size:13.5px">' +
         esc(r.editedBy) + " · " + esc(r.editedAt) + (r.editNote ? " — " + esc(r.editNote) : "") + "</div></div>"
       : "";
-    abrir(label(r), r.st === "sentado" ? "Llegó " + r.arr : (r.conf ? "Confirmó que viene" : "Sin confirmar"),
+    const tardeDet = atraso(r);
+    const subtitulo = r.st === "sentado" ? "Llegó " + r.arr
+      : r.st === "caida" ? "No vino · " + r.pax + " cupos libres"
+      : tardeDet > 0 ? textoAtraso(tardeDet) + " · reservó " + r.t
+      : (r.conf ? "Confirmó que viene" : "Sin confirmar");
+    abrir(label(r), subtitulo,
       '<div class="facts">' +
         '<div class="fact"><div class="k">Hora</div><div class="v">' + r.t + "</div></div>" +
         '<div class="fact"><div class="k">Personas</div><div class="v">' + r.pax + "</div></div>" +
@@ -769,6 +875,16 @@
         const antes = r.st; r.st = "finalizada"; cerrar(); render();
         avisar("Se liberaron " + r.pax + " cupos", () => { r.st = antes; });
       }
+      if (act === "caida") {
+        const antes = r.st; r.st = "caida"; cerrar(); render();
+        avisar(label(r) + " se cayó · " + r.pax + " cupos libres", () => { r.st = antes; });
+      }
+      if (act === "revivir") { checkIn(r, true); }
+      if (act === "caida") {
+        const antes = r.st; r.st = "caida"; cerrar(); render();
+        avisar(label(r) + " se cayó · " + r.pax + " cupos libres", () => { r.st = antes; });
+      }
+      if (act === "revivir") checkIn(r, true);
       if (act === "editar") editar(r);
       if (act === "wa") { cerrar(); avisar("Abriendo la conversación de " + label(r)); }
       if (act === "cancelar") confirmarCancelar(r);
@@ -901,6 +1017,42 @@
       avisar(nom + " quedó para las " + hora, () => { data = data.filter((x) => x.id !== r.id); });
     });
   });
+  const DIA_CORTO = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+  function diasConReservas() {
+    const set = [...new Set(data.map((r) => r.d))].sort();
+    if (!set.includes(HOY)) set.unshift(HOY);
+    return set;
+  }
+  function irA(d) {
+    fecha = d;
+    view = "por-llegar"; query = "";
+    document.querySelectorAll(".seg").forEach((x) =>
+      x.setAttribute("aria-selected", String(x.dataset.view === "por-llegar")));
+    cerrar(); render();
+    board.scrollTop = 0;
+    $("#top").classList.remove("compact");
+  }
+  $("#dateBtn").addEventListener("click", () => {
+    const dias = diasConReservas().map((d) => {
+      const n = data.filter((r) => r.d === d && (r.st === "por-llegar" || r.st === "sentado")).length;
+      const [a, m, dd] = d.split("-").map(Number);
+      const et = DIA_CORTO[new Date(a, m - 1, dd).getDay()];
+      return '<button class="act" type="button" data-dia="' + d + '"' +
+        (d === fecha ? ' style="border-color:var(--cyan-ink)"' : "") + ">" +
+        "<span>" + (d === HOY ? "Hoy" : et + " " + dd) + " · " + fechaLarga(d) + "</span>" +
+        "<small>" + n + (n === 1 ? " reserva" : " reservas") + "</small></button>";
+    }).join("");
+    abrir("¿Qué día?", "El prototipo trae cargados estos tres",
+      '<div class="acts">' + dias + "</div>" +
+      '<p style="margin:14px 0 6px;font-size:13px;color:var(--muted);line-height:1.55">' +
+      "Sirve para cuando alguien está parado en la puerta con una reserva de otro día y hay que moverla. " +
+      "La pantalla siempre abre en <strong>hoy</strong>.</p>");
+    sheetBody.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-dia]");
+      if (b) irA(b.dataset.dia);
+    }, { once: true });
+  });
+  $("#otherDayBtn").addEventListener("click", () => irA(HOY));
   $("#searchBtn").addEventListener("click", () => {
     abrir("Buscar", "Atraviesa todos los estados del día",
       '<div class="fld"><label class="f" for="s-q">Nombre o celular</label>' +
@@ -922,6 +1074,7 @@
     res.addEventListener("click", (e) => {
       const b = e.target.closest("[data-go]"); if (!b) return;
       const r = find(b.dataset.go);
+      fecha = r.d;
       view = "todas"; query = "";
       document.querySelectorAll(".seg").forEach((s) => s.setAttribute("aria-selected", String(s.dataset.view === "todas")));
       cerrar(); render();
@@ -974,12 +1127,13 @@
       board.scrollTop = 0;
     });
   });
-  function reloj() {
-    const d = new Date();
-    $("#clock").textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-  }
-  reloj();
-  setInterval(reloj, 30000);
+  $("#clock").textContent = AHORA;
+  const top = $("#top");
+  board.addEventListener("scroll", () => {
+    const y = board.scrollTop;
+    if (y > 24) top.classList.add("compact");
+    else if (y < 6) top.classList.remove("compact");
+  }, { passive: true });
   render();
 })();
 </script>

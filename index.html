@@ -166,6 +166,13 @@
     width: 6px; height: 6px; border-radius: 50%; background: var(--seated); flex: 0 0 auto;
   }
   .today-label { flex: 1; min-width: 0; }
+  .topadd {
+    width: 38px; height: 38px; flex: 0 0 auto; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--cyan-ink); background: var(--cyan-wash); color: var(--cyan-ink);
+    display: grid; place-items: center;
+  }
+  .topadd svg { width: 19px; height: 19px; }
+  .topadd:active { transform: translateY(1px); }
   .today-label .d1 {
     display: block;
     font-size: 17px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2;
@@ -534,6 +541,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <span class="live" title="Hora del prototipo"><i></i><span id="clock">19:20</span></span>
+          <button class="topadd" id="newTopBtn" aria-label="Nueva reserva">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
         </div>
 
         <button class="capsule collapsable" id="capacityBtn">
@@ -811,6 +821,17 @@
     const h = Math.floor(m / 60), r = m % 60;
     return h + " h" + (r ? " " + r + " min" : "") + " tarde";
   }
+  function horasSugeridas() {
+    const out = [{ v: AHORA, txt: "Ahora " + AHORA }];
+    let m = Math.ceil((MIN_AHORA + 1) / 30) * 30;
+    while (out.length < 6) {
+      const hh = String(Math.floor(m / 60) % 24).padStart(2, "0");
+      const mm = String(m % 60).padStart(2, "0");
+      out.push({ v: hh + ":" + mm, txt: hh + ":" + mm });
+      m += 30;
+    }
+    return out;
+  }
   const find = (id) => data.find((r) => r.id === +id);
   function checkIn(r, desdeHoja) {
     const antes = { st: r.st, arr: r.arr };
@@ -975,15 +996,21 @@
       } else cerrar();
     });
   }
-  $("#newBtn").addEventListener("click", () => {
-    const horas = ["13:00", "18:00", "19:00", "19:30", "20:00", "21:00"];
-    abrir("Nueva reserva", "Sábado 8 de agosto · Restaurante Redman",
+  function nuevaReserva() {
+    const horas = horasSugeridas();
+    abrir("Nueva reserva", (fecha === HOY ? "Hoy · " : "") + fechaLarga(fecha) + " · Restaurante Redman",
       '<div class="fld"><label class="f">¿Cuántas personas?</label>' +
         '<div class="stepper"><button type="button" id="n-menos" aria-label="Menos personas">−</button>' +
         '<span class="val" id="n-pax">2</span>' +
         '<button type="button" id="n-mas" aria-label="Más personas">+</button></div></div>' +
       '<div class="fld"><label class="f">¿A qué hora?</label><div class="chips" id="n-horas">' +
-        horas.map((h, i) => '<button type="button" class="chip" aria-pressed="' + (i === 2) + '">' + h + "</button>").join("") +
+        horas.map((h, i) =>
+          '<button type="button" class="chip" data-h="' + h.v + '" aria-pressed="' + (i === 0) + '">' +
+          h.txt + "</button>").join("") +
+        "</div>" +
+        '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">' +
+        '<label class="f" for="n-hora" style="margin:0;white-space:nowrap">u otra hora</label>' +
+        '<input id="n-hora" type="time" style="flex:1;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card-2);color:var(--ink);padding:8px 12px;font-size:16px;font-family:inherit">' +
         "</div></div>" +
       '<div class="fld"><label class="f" for="n-nom">Nombre</label><input id="n-nom" placeholder="Como lo dijo el cliente"></div>' +
       '<div class="fld"><label class="f" for="n-tel">Celular</label><input id="n-tel" type="tel" inputmode="numeric" placeholder="300 000 0000"></div>' +
@@ -992,13 +1019,23 @@
       '<button class="b-ghost" style="flex:1;justify-content:center" type="button" data-n="no">Volver</button>' +
       '<button class="b-primary" type="button" data-n="si">Guardar reserva</button>');
     const $$ = (s) => sheet.querySelector(s);
-    let pax = 2, hora = "19:00";
+    let pax = 2, hora = horas[0].v;
+    $$("#n-hora").value = hora;
     $$("#n-menos").addEventListener("click", () => { pax = Math.max(1, pax - 1); $$("#n-pax").textContent = pax; });
     $$("#n-mas").addEventListener("click", () => { pax++; $$("#n-pax").textContent = pax; });
     $$("#n-horas").addEventListener("click", (e) => {
       const c = e.target.closest(".chip"); if (!c) return;
       $$("#n-horas").querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", "false"));
-      c.setAttribute("aria-pressed", "true"); hora = c.textContent;
+      c.setAttribute("aria-pressed", "true");
+      hora = c.dataset.h;
+      $$("#n-hora").value = hora;
+    });
+    $$("#n-hora").addEventListener("input", () => {
+      const v = $$("#n-hora").value;
+      if (!v) return;
+      hora = v;
+      $$("#n-horas").querySelectorAll(".chip").forEach((x) =>
+        x.setAttribute("aria-pressed", String(x.dataset.h === v)));
     });
     onFoot((e) => {
       const b = e.target.closest("[data-n]"); if (!b) return;
@@ -1007,7 +1044,7 @@
       const tl = $$("#n-tel").value.replace(/\D/g, "");
       if (!nom) { avisar("Falta el nombre del cliente"); $$("#n-nom").focus(); return; }
       if (tl.length < 10) { avisar("El celular necesita 10 dígitos"); $$("#n-tel").focus(); return; }
-      const r = { id: nextId++, t: hora, nm: nom, pax: pax, tel: "57" + tl.slice(-10), st: "por-llegar", conf: false };
+      const r = { id: nextId++, d: fecha, t: hora, nm: nom, pax: pax, tel: "57" + tl.slice(-10), st: "por-llegar", conf: false };
       data.push(r);
       view = "por-llegar"; query = "";
       document.querySelectorAll(".seg").forEach((s) => s.setAttribute("aria-selected", String(s.dataset.view === "por-llegar")));
@@ -1016,7 +1053,9 @@
       if (fila) { fila.classList.add("flash"); fila.scrollIntoView({ block: "center", behavior: "smooth" }); }
       avisar(nom + " quedó para las " + hora, () => { data = data.filter((x) => x.id !== r.id); });
     });
-  });
+  }
+  $("#newBtn").addEventListener("click", nuevaReserva);
+  $("#newTopBtn").addEventListener("click", nuevaReserva);
   const DIA_CORTO = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
   function diasConReservas() {
     const set = [...new Set(data.map((r) => r.d))].sort();
